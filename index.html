@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Sandbox - AI Agents Left Alone in a World</title>
+  <style>
+    :root {
+      --bg: #0b111e;
+      --card: #151f33;
+      --border: #243452;
+      --accent: #10b981;
+      --primary: #f59e0b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    header { padding: 1.25rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(11, 17, 30, 0.85); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 50; }
+    .brand { display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.25rem; }
+    .badge-icon { background: linear-gradient(135deg, var(--accent), var(--primary)); padding: 0.4rem 0.6rem; border-radius: 8px; color: #fff; font-size: 0.9rem; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; width: 100%; flex: 1; display: flex; flex-direction: column; }
+    .hero { text-align: center; margin-bottom: 1.5rem; }
+    .hero h1 { font-size: 2.25rem; font-weight: 800; margin-bottom: 0.5rem; background: linear-gradient(to right, #fff, var(--muted)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { color: var(--muted); font-size: 1.05rem; }
+
+    .byop-banner { display: flex; justify-content: space-between; align-items: center; background: rgba(16, 185, 129, 0.08); border: 1px dashed var(--accent); border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .byop-banner input { background: #0e1626; border: 1px solid var(--border); color: #fff; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.85rem; width: 260px; }
+
+    .sandbox-layout { display: grid; grid-template-columns: 1fr 420px; gap: 1.5rem; flex: 1; }
+    .world-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+    .card-top { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    canvas { width: 100%; height: 440px; background: #080d17; display: block; }
+    .world-controls { padding: 1rem 1.25rem; border-top: 1px solid var(--border); display: flex; gap: 1rem; align-items: center; }
+
+    .feed-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; max-height: 540px; }
+    .feed-body { padding: 1.25rem; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; font-size: 0.9rem; }
+    .feed-item { padding: 0.75rem 1rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; border-left: 3px solid var(--accent); }
+    .feed-name { font-weight: 700; font-size: 0.8rem; margin-bottom: 0.25rem; color: var(--accent); }
+    .feed-thought { color: #cbd5e1; line-height: 1.5; font-style: italic; }
+
+    button.btn-ctrl { background: linear-gradient(135deg, var(--accent), var(--primary)); color: #fff; border: none; border-radius: 8px; padding: 0.65rem 1.5rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+    footer { border-top: 1px solid var(--border); padding: 1.5rem; text-align: center; color: var(--muted); font-size: 0.9rem; margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="badge-icon">🏕️</span>
+      <span>Agent Sandbox</span>
+    </div>
+    <a href="https://pollinations.ai/?ref=badge" target="_blank">
+      <img src="https://raw.githubusercontent.com/pollinations/pollinations/main/packages/ui/src/brand/badge-made-with.svg" alt="Made with pollinations.ai" style="height: 32px;">
+    </a>
+  </header>
+
+  <div class="container">
+    <div class="hero">
+      <h1>AI Agents Left Alone in a Virtual World</h1>
+      <p>Inspired by the arXiv paper <em>Is this machine playing?</em> — Watch autonomous agents wander, discover idle play, and invent interactions without human instructions.</p>
+    </div>
+
+    <div class="byop-banner">
+      <div>
+        <strong>🔑 Bring Your Own Pollen (BYOP):</strong> Enter your Pollinations API key to power autonomous agent reasoning.
+      </div>
+      <input type="password" id="apiKeyInput" placeholder="Enter key (or leave empty for free tier)" onchange="saveKey(this.value)">
+    </div>
+
+    <div class="sandbox-layout">
+      <div class="world-card">
+        <div class="card-top">
+          <strong>Autonomous 2D Island Ecosystem</strong>
+          <span style="font-size:0.8rem; color:var(--accent);">Zero Pre-Programmed Goals</span>
+        </div>
+        <canvas id="worldCanvas"></canvas>
+        <div class="world-controls">
+          <button class="btn-ctrl" id="simBtn" onclick="toggleSim()">▶ Start Autonomous Life</button>
+          <span style="font-size:0.85rem; color:var(--muted);">3 Autonomous Agents: Nova (Explorer), Echo (Philosopher), Spark (Playful)</span>
+        </div>
+      </div>
+
+      <div class="feed-card">
+        <div class="card-top">
+          <strong>Agent Emergent Behavior Feed</strong>
+          <span style="font-size:0.75rem; color:var(--muted);">gen.pollinations.ai</span>
+        </div>
+        <div class="feed-body" id="feedBody">
+          <div style="color:var(--muted); text-align:center; padding:2rem 0;" id="placeholderMsg">
+            Click "Start Autonomous Life" to observe agents wander the island and invent emergent games and spontaneous conversations.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <a href="https://pollinations.ai/?ref=badge" target="_blank">
+      <img src="https://raw.githubusercontent.com/pollinations/pollinations/main/packages/ui/src/brand/badge-made-with.svg" alt="Made with pollinations.ai" style="height: 32px;">
+    </a>
+    <p>Built with Pollinations.ai API for POLLEN-QUEST #19177 • Emergent AI Agent Behavior Simulation</p>
+  </footer>
+
+  <script>
+    const canvas = document.getElementById('worldCanvas');
+    const ctx = canvas.getContext('2d');
+    let isRunning = false;
+    let animId = null;
+
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = 440;
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function saveKey(val) {
+      if (val) localStorage.setItem('pollinations_key', val.trim());
+      else localStorage.removeItem('pollinations_key');
+    }
+
+    const AGENTS = [
+      { id: 'nova', name: 'Nova (Explorer)', color: '#38bdf8', x: 120, y: 150, vx: 1.2, vy: 0.8, targetX: 200, targetY: 200 },
+      { id: 'echo', name: 'Echo (Philosopher)', color: '#a855f7', x: 300, y: 280, vx: -0.9, vy: 1.1, targetX: 350, targetY: 180 },
+      { id: 'spark', name: 'Spark (Playful)', color: '#f59e0b', x: 220, y: 220, vx: 1.4, vy: -1.2, targetX: 100, targetY: 300 }
+    ];
+
+    const LANDMARKS = [
+      { name: "Ancient Monolith", x: 260, y: 200, r: 24, color: "#334155" },
+      { name: "Crystal Pond", x: 140, y: 320, r: 35, color: "#0284c7" },
+      { name: "Whispering Trees", x: 400, y: 120, r: 30, color: "#059669" }
+    ];
+
+    function drawWorld() {
+      ctx.fillStyle = '#080d17';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Landmarks
+      LANDMARKS.forEach(l => {
+        ctx.beginPath();
+        ctx.arc(l.x, l.y, l.r, 0, Math.PI*2);
+        ctx.fillStyle = l.color;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.stroke();
+
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px sans-serif';
+        ctx.fillText(l.name, l.x - l.r, l.y + l.r + 15);
+      });
+
+      // Update & Draw Agents
+      AGENTS.forEach(a => {
+        if (isRunning) {
+          a.x += a.vx;
+          a.y += a.vy;
+
+          if (a.x < 30 || a.x > canvas.width - 30) a.vx *= -1;
+          if (a.y < 30 || a.y > canvas.height - 30) a.vy *= -1;
+        }
+
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, 10, 0, Math.PI*2);
+        ctx.fillStyle = a.color;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        ctx.font = '12px sans-serif';
+        ctx.fillText(a.name.split(' ')[0], a.x - 12, a.y - 14);
+      });
+
+      animId = requestAnimationFrame(drawWorld);
+    }
+
+    async function triggerAgentEmergence() {
+      if (!isRunning) return;
+      const agent = AGENTS[Math.floor(Math.random() * AGENTS.length)];
+      const landmark = LANDMARKS[Math.floor(Math.random() * LANDMARKS.length)];
+      const apiKey = localStorage.getItem('pollinations_key') || "";
+
+      const prompt = `You are an autonomous AI agent named ${agent.name} left completely alone in a virtual sandbox world with no assigned tasks or goals. You are currently near the ${landmark.name}. Express a brief, spontaneous 1-2 sentence thought, curiosity, or emergent playful action you just invented to pass the time.`;
+
+      try {
+        const headers = { "Content-Type": "application/json" };
+        if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+
+        const res = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({
+            model: "openai",
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.85,
+            max_tokens: 80
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const thought = data.choices?.[0]?.message?.content || "...";
+          appendFeed(agent.name, thought);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
+      if (isRunning) {
+        setTimeout(triggerAgentEmergence, 4500);
+      }
+    }
+
+    function appendFeed(name, text) {
+      const p = document.getElementById('placeholderMsg');
+      if (p) p.remove();
+
+      const feed = document.getElementById('feedBody');
+      const item = document.createElement('div');
+      item.className = 'feed-item';
+      item.innerHTML = `
+        <div class="feed-name">🏕️ ${name}</div>
+        <div class="feed-thought">"${text}"</div>
+      `;
+      feed.prepend(item);
+    }
+
+    function toggleSim() {
+      const btn = document.getElementById('simBtn');
+      if (isRunning) {
+        isRunning = false;
+        btn.textContent = "▶ Resume Autonomous Life";
+      } else {
+        isRunning = true;
+        btn.textContent = "⏸ Pause Autonomous Life";
+        triggerAgentEmergence();
+      }
+    }
+
+    window.onload = () => {
+      resizeCanvas();
+      const saved = localStorage.getItem('pollinations_key') || "";
+      if (saved) document.getElementById('apiKeyInput').value = saved;
+      drawWorld();
+    };
+  </script>
+</body>
+</html>
